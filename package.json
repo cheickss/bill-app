@@ -2,7 +2,8 @@
   "scripts": {
     "test": "jest --coverage --noStackTrace --silent",
     "test-login": "jest src/__tests__/Login",
-    "test-bill": "jest src/__tests__/Bills"
+    "test-bill": "jest src/__tests__/Bills",
+    "test-new-bill": "jest src/__tests__/NewBill"
   },
   "jest": {
     "verbose": false,
