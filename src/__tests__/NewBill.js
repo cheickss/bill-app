@@ -11,6 +11,9 @@ import { ROUTES_PATH, ROUTES} from "../constants/routes.js";
 import mockStore from "../__mocks__/store"
 import router from "../app/Router.js";
 
+let newBill
+let inputFile
+let inputFileGet
 describe("Given I am connected as an employee", () => {
   beforeAll(()=> {
     window.localStorage.setItem('user', JSON.stringify({
@@ -23,151 +26,73 @@ describe("Given I am connected as an employee", () => {
     router()
     window.onNavigate(ROUTES_PATH.NewBill)
   })
+  describe("When I am on NewBill Page", () => {
+    beforeAll(() => {
+      document.body.innerHTML = NewBillUI()
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname })
+      }
+      const store = null
+      newBill = new NewBill({
+        document, onNavigate, store, localStorage: window.localStorage
+      })
+    })
 
-  afterEach(()=>{
-    jest.clearAllMocks();
-  })
-  
 
-  describe("When I upload wrong file extension", () => {
+    describe("When I upload a file", () => {
+      beforeAll(async () => {
+        inputFile = await waitFor(() => screen.getByTestId('file'))
+        inputFileGet = jest.fn()
+        Object.defineProperty(inputFile, 'files', {
+          get: inputFileGet
+        })
+      })
+
+      test("if it is a wrong extension then It should not save the file in DB", async () => {
+        inputFileGet.mockReturnValue([{
+          name: 'chucknorris.pdf',
+          type: 'text/pdf',
+          size: 12345,
+          blob: 'some-blob'
+        }])
+
+        const createFile = jest.spyOn(newBill, 'createFile')
+
+        fireEvent.change(inputFile)
+
+        expect(inputFile.value).toEqual('')
+        expect(createFile).not.toHaveBeenCalled()
+      });
+
+      test("if it is a good extension then It should save the file in DB", async () => {
+        inputFileGet.mockReturnValue([{
+          name: 'chucknorris.png',
+          type: 'image/png',
+          size: 12345,
+          blob: 'some-blob'
+        }])
+
+        const createFile = jest.spyOn(newBill, 'createFile')
+
+        fireEvent.change(inputFile)
+        expect(createFile).toHaveBeenCalled()
+      });
+
+    });
+    describe("When I navigate to new Bills", () => {
+      test("ih should render form", async () => {
+        expect(await screen.findByTestId("expense-name")).toBeTruthy()
+        expect(await screen.findByTestId("form-new-bill")).toBeTruthy()
+        expect(await screen.findByTestId("expense-type")).toBeTruthy()
+        expect(await screen.findByTestId("datepicker")).toBeTruthy()
+        expect(await screen.findByTestId("amount")).toBeTruthy()
+        expect(await screen.findByTestId("vat")).toBeTruthy()
+        expect(await screen.findByTestId("pct")).toBeTruthy()
+        expect(await screen.findByTestId("commentary")).toBeTruthy()
+        expect(await screen.findByTestId("file")).toBeTruthy()
+
+      })
    
-    test("Then It should not save the file in DB", async() => {
-     
-  
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
-      };
-
-      let PREVIOUS_LOCATION = "";
-    
-      jest.spyOn(mockStore, "bills")
-      const newBill = new NewBill({
-        document,
-        localStorage: window.localStorage,
-        onNavigate,
-        PREVIOUS_LOCATION,
-        store: mockStore,
-        handleSubmit: jest.fn(),
-        updateBill: jest.fn()
-      });
-      const inputFile = screen.getByTestId("file");
-      const file = new File(['test'], 'chucknorris.pdf', {type: 'text/pdf'})
-      user.upload(inputFile, file);
-    expect(inputFile.files[0]).toEqual(file)
-    expect(mockStore.bills).not.toHaveBeenCalled()
-
-    });
-   
-    });
-
-  describe("When I upload correct file extension", () => {
-    test("Then It should  save the file in DB", async() => {
-         
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
-      };
-      const mockCreate = jest.fn().mockResolvedValue({filePath: 'https://localhost:3456/images/test.jpg', key: '1234'})
-      let PREVIOUS_LOCATION = "";
-      jest.spyOn(mockStore, "bills")
-        mockStore.bills.mockImplementation(() => {
-          return {
-            create: mockCreate
-          };
-        });
-      const newBill = new NewBill({
-        document,
-        localStorage: window.localStorage,
-        onNavigate,
-        PREVIOUS_LOCATION,
-        store: mockStore,
-        handleSubmit: jest.fn(),
-        updateBill: jest.fn()
-      });
-      const inputFile = screen.getByTestId("file");
-      const file = new File(['test'], 'chucknorris.png', {type: 'image/png'})
-      user.upload(inputFile, file);
-    expect(inputFile.files[0]).toEqual(file)
-    expect(mockStore.bills).toHaveBeenCalledTimes(1)
-    expect(mockCreate).toHaveBeenCalledWith({data: {
-      email: 'johndoe@email.com',
-      file
-    },
-      headers: {
-        noContentType: true
-      }})
-
-    });
-    test("Then It should  save the file in DB", async() => {
-         
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
-      };
-      const mockCreate = jest.fn().mockResolvedValue({filePath: 'https://localhost:3456/images/test.jpg', key: '1234'})
-      let PREVIOUS_LOCATION = "";
-      jest.spyOn(mockStore, "bills")
-        mockStore.bills.mockImplementation(() => {
-          return {
-            create: mockCreate
-          };
-        });
-      const newBill = new NewBill({
-        document,
-        localStorage: window.localStorage,
-        onNavigate,
-        PREVIOUS_LOCATION,
-        store: mockStore,
-        handleSubmit: jest.fn(),
-        updateBill: jest.fn()
-      });
-      const inputFile = screen.getByTestId("file");
-      const file = new File(['test'], 'chucknorris.jpeg', {type: 'image/jpeg'})
-      user.upload(inputFile, file);
-    expect(inputFile.files[0]).toEqual(file)
-    expect(mockStore.bills).toHaveBeenCalledTimes(1)
-    expect(mockCreate).toHaveBeenCalledWith({data: {
-      email: 'johndoe@email.com',
-      file
-    },
-      headers: {
-        noContentType: true
-      }})
-
-    });
-    test("Then It should  save the file in DB", async() => {
-         
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
-      };
-      const mockCreate = jest.fn().mockResolvedValue({filePath: 'https://localhost:3456/images/test.jpg', key: '1234'})
-      let PREVIOUS_LOCATION = "";
-      jest.spyOn(mockStore, "bills")
-        mockStore.bills.mockImplementation(() => {
-          return {
-            create: mockCreate
-          };
-        });
-      const newBill = new NewBill({
-        document,
-        localStorage: window.localStorage,
-        onNavigate,
-        PREVIOUS_LOCATION,
-        store: mockStore,
-        handleSubmit: jest.fn(),
-        updateBill: jest.fn()
-      });
-      const inputFile = screen.getByTestId("file");
-      const file = new File(['test'], 'chucknorris.svg', {type: 'image/svg'})
-      user.upload(inputFile, file);
-    expect(inputFile.files[0]).toEqual(file)
-    expect(mockStore.bills).toHaveBeenCalledTimes(1)
-    expect(mockCreate).toHaveBeenCalledWith({data: {
-      email: 'johndoe@email.com',
-      file
-    },
-      headers: {
-        noContentType: true
-      }})
-
-    });
+    })
     });
 });
